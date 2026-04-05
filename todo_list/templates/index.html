@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TaskFlow</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+
+        <!-- Decorative SVG bottom -->
+        <svg class="sidebar-bg" viewBox="0 0 240 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20"  cy="180" r="100" fill="#EFF6FF"/>
+            <circle cx="200" cy="160" r="60"  fill="#BFDBFE" opacity="0.5"/>
+            <rect x="60" y="100" width="40" height="40" rx="8" fill="#BFDBFE" opacity="0.4" transform="rotate(15 60 100)"/>
+        </svg>
+
+        <div class="sidebar-brand">
+            <div class="icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M4 10L8 14L16 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <span>TaskFlow</span>
+        </div>
+
+        <div class="sidebar-section">
+            <div class="sidebar-label">Categories</div>
+            {% for cat in categories %}
+            <div class="cat-pill">
+                <div class="cat-dot"></div>
+                {{ cat.name }}
+            </div>
+            {% endfor %}
+            <form action="/add_category" method="POST" class="add-cat-form">
+                <input type="text" name="category_name" placeholder="New category...">
+                <button type="submit">+</button>
+            </form>
+        </div>
+
+        <div class="user-block">
+            <span class="name">{{ current_user.username }}</span>
+            <a href="/logout" class="logout">Sign out</a>
+        </div>
+
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+        <div class="page-header">
+            <h2>My Tasks</h2>
+            <span class="date" id="js-date"></span>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row">
+            <div class="stat">
+                <div class="stat-icon blue">
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                        <rect x="3" y="3" width="16" height="16" rx="4" stroke="#2563EB" stroke-width="1.5"/>
+                        <path d="M7 11H15M7 7H15M7 15H11" stroke="#2563EB" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <div class="num">{{ todos|length }}</div>
+                    <div class="lbl">Total tasks</div>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="stat-icon green">
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                        <circle cx="11" cy="11" r="8" stroke="#16A34A" stroke-width="1.5"/>
+                        <path d="M7 11L10 14L15 8" stroke="#16A34A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <div class="num">{{ todos|selectattr('done','equalto',True)|list|length }}</div>
+                    <div class="lbl">Completed</div>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="stat-icon amber">
+                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+                        <circle cx="11" cy="11" r="8" stroke="#D97706" stroke-width="1.5"/>
+                        <path d="M11 7V11L14 13" stroke="#D97706" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <div class="num">{{ todos|selectattr('done','equalto',False)|list|length }}</div>
+                    <div class="lbl">Remaining</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search -->
+        <div class="panel">
+            <div class="panel-title">Search & Filter</div>
+            <form method="GET" action="/">
+                <div class="input-row">
+                    <input type="text" name="search" placeholder="Search your tasks..." value="{{ search }}">
+                    <select name="category">
+                        <option value="">All categories</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}" {% if cat_filter == cat.id|string %}selected{% endif %}>{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn-blue">Search</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Add task -->
+        <div class="panel">
+            <div class="panel-title">Add Task</div>
+            <form action="/add" method="POST">
+                <div class="input-row">
+                    <input type="text" name="task" placeholder="What needs to be done?" required>
+                    <select name="category_id">
+                        <option value="">No category</option>
+                        {% for cat in categories %}
+                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn-blue">Add task</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Task list -->
+        <div class="task-panel">
+            <div class="task-panel-head">Tasks</div>
+            {% for todo in todos %}
+            <div class="task-item {{ 'done' if todo.done }}">
+                <a href="/complete/{{ todo.id }}" class="task-check">
+                    {% if todo.done %}
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6L5 9L10 3" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    {% endif %}
+                </a>
+                <div class="task-body">
+                    <div class="task-name">{{ todo.task }}</div>
+                    {% if todo.category %}
+                    <span class="tag">{{ todo.category.name }}</span>
+                    {% endif %}
+                </div>
+                <a href="/delete/{{ todo.id }}" class="task-del">×</a>
+            </div>
+            {% endfor %}
+            {% if not todos %}
+            <div class="empty-msg">No tasks yet — add one above to get started.</div>
+            {% endif %}
+        </div>
+
+    </main>
+</div>
+
+<script>
+    const d = new Date();
+    document.getElementById('js-date').textContent =
+        d.toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+</script>
+</body>
+</html>
